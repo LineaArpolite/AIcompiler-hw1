@@ -332,6 +332,7 @@ build/bin/llc -march=cpu0 -mcpu=cpu032II -O2 -enable-cpu0-mul-strength-reduce=fa
 ## 6.4 综合检查结果
 以上命令链路最终得到：`ALL_CHECKS_PASSED`。
 
+---
 
 ## 7. 结论
 本实验完成了 Cpu0 后端从 `LLVM IR -> SelectionDAG -> MachineInstr -> MC -> 汇编` 的端到端增强：
