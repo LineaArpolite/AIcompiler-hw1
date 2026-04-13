@@ -121,7 +121,7 @@ public:
   }
 
   bool hasChapter12_1() const {
-    return false;
+    return true;
   }
 
 protected:
@@ -214,4 +214,3 @@ public:
 } // End llvm namespace
 
 #endif // #if CH >= CH3_1
-

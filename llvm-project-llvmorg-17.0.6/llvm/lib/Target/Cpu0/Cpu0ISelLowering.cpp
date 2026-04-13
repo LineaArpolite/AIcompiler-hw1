@@ -82,6 +82,7 @@ const char *Cpu0TargetLowering::getTargetNodeName(unsigned Opcode) const {
   case Cpu0ISD::EH_RETURN:         return "Cpu0ISD::EH_RETURN";
   case Cpu0ISD::DivRem:            return "Cpu0ISD::DivRem";
   case Cpu0ISD::DivRemU:           return "Cpu0ISD::DivRemU";
+  case Cpu0ISD::IMAC:              return "Cpu0ISD::IMAC";
   case Cpu0ISD::Wrapper:           return "Cpu0ISD::Wrapper";
   default:                         return NULL;
   }
@@ -137,7 +138,9 @@ Cpu0TargetLowering::Cpu0TargetLowering(const Cpu0TargetMachine &TM,
   setOperationAction(ISD::BR_CC,             MVT::i32, Expand);
   setOperationAction(ISD::SELECT_CC,         MVT::i32, Expand);
   setOperationAction(ISD::SELECT_CC,         MVT::Other, Expand);
-  setOperationAction(ISD::CTPOP,             MVT::i32,   Expand);
+  setOperationAction(ISD::SMAX,              MVT::i32,   Legal);
+  setOperationAction(ISD::SMIN,              MVT::i32,   Legal);
+  setOperationAction(ISD::CTPOP,             MVT::i32,   Legal);
   setOperationAction(ISD::CTTZ,              MVT::i32,   Expand);
   setOperationAction(ISD::CTTZ_ZERO_UNDEF,   MVT::i32,   Expand);
   setOperationAction(ISD::CTLZ_ZERO_UNDEF,   MVT::i32,   Expand);
@@ -165,6 +168,7 @@ Cpu0TargetLowering::Cpu0TargetLowering(const Cpu0TargetMachine &TM,
   setOperationAction(ISD::BSWAP, MVT::i32, Expand);
   setOperationAction(ISD::BSWAP, MVT::i64, Expand);
 
+  setTargetDAGCombine(ISD::ADD);
   setTargetDAGCombine(ISD::SDIVREM);
   setTargetDAGCombine(ISD::UDIVREM);
 
@@ -225,6 +229,37 @@ static SDValue performDivRemCombine(SDNode *N, SelectionDAG& DAG,
   return SDValue();
 }
 
+static SDValue performIMACCombine(SDNode *N, SelectionDAG &DAG,
+                                  TargetLowering::DAGCombinerInfo &DCI) {
+  if (DCI.isBeforeLegalizeOps())
+    return SDValue();
+
+  if (N->getValueType(0) != MVT::i32)
+    return SDValue();
+
+  SDValue LHS = N->getOperand(0);
+  SDValue RHS = N->getOperand(1);
+  SDValue MulNode;
+  SDValue Addend;
+
+  if (LHS.getOpcode() == ISD::MUL) {
+    MulNode = LHS;
+    Addend = RHS;
+  } else if (RHS.getOpcode() == ISD::MUL) {
+    MulNode = RHS;
+    Addend = LHS;
+  } else {
+    return SDValue();
+  }
+
+  if (!MulNode.hasOneUse())
+    return SDValue();
+
+  SDLoc DL(N);
+  return DAG.getNode(Cpu0ISD::IMAC, DL, MVT::i32, MulNode.getOperand(0),
+                     MulNode.getOperand(1), Addend);
+}
+
 SDValue Cpu0TargetLowering::PerformDAGCombine(SDNode *N, DAGCombinerInfo &DCI)
   const {
   SelectionDAG &DAG = DCI.DAG;
@@ -232,6 +267,8 @@ SDValue Cpu0TargetLowering::PerformDAGCombine(SDNode *N, DAGCombinerInfo &DCI)
 
   switch (Opc) {
   default: break;
+  case ISD::ADD:
+    return performIMACCombine(N, DAG, DCI);
   case ISD::SDIVREM:
   case ISD::UDIVREM:
     return performDivRemCombine(N, DAG, DCI, Subtarget);
@@ -1502,4 +1539,3 @@ void Cpu0TargetLowering::writeVarArgRegs(std::vector<SDValue> &OutChains,
     OutChains.push_back(Store);
   }
 }
-

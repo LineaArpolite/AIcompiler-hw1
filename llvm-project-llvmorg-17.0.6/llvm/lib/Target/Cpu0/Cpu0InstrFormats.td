@@ -32,6 +32,7 @@ def FrmA      : Format<1>;
 def FrmL      : Format<2>;
 def FrmJ      : Format<3>;
 def FrmOther  : Format<4>; // Instruction w/ a custom format
+def FrmR4     : Format<5>; // 4-register arithmetic format
 
 // Generic Cpu0 Format
 class Cpu0Inst<dag outs, dag ins, string asmstr, list<dag> pattern,
@@ -106,6 +107,26 @@ class FA<bits<8> op, dag outs, dag ins, string asmstr,
   let Inst{11-0}  = shamt;
 }
 
+//===----------------------------------------------------------------------===//
+// Format R4 instruction class in Cpu0 : <|opcode|ra|rb|rc|rd|resv8|>
+//===----------------------------------------------------------------------===//
+
+class FR4<bits<8> op, dag outs, dag ins, string asmstr,
+          list<dag> pattern, InstrItinClass itin>:
+      Cpu0Inst<outs, ins, asmstr, pattern, itin, FrmR4> {
+  bits<4> ra;
+  bits<4> rb;
+  bits<4> rc;
+  bits<4> rd;
+
+  let Opcode = op;
+  let Inst{23-20} = ra;
+  let Inst{19-16} = rb;
+  let Inst{15-12} = rc;
+  let Inst{11-8}  = rd;
+  let Inst{7-0}   = 0;
+}
+
 //@class FL {
 //===----------------------------------------------------------------------===//
 // Format L instruction class in Cpu0 : <|opcode|ra|rb|cx|>
@@ -139,4 +160,3 @@ class FJ<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern,
 
   let Inst{23-0} = addr;
 }
-

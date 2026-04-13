@@ -58,6 +58,9 @@ namespace llvm {
       DivRem,
       DivRemU,
 
+      // Integer fused multiply-add.
+      IMAC,
+
       Wrapper,
       DynAlloc,
 
@@ -382,4 +385,3 @@ namespace llvm {
 }
 
 #endif // Cpu0ISELLOWERING_H
-

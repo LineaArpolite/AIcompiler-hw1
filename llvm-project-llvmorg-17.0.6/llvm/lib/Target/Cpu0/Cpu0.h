@@ -29,8 +29,8 @@ namespace llvm {
   FunctionPass *createCpu0DelaySlotFillerPass(Cpu0TargetMachine &TM);
   FunctionPass *createCpu0DelJmpPass(Cpu0TargetMachine &TM);
   FunctionPass *createCpu0LongBranchPass(Cpu0TargetMachine &TM);
+  FunctionPass *createCpu0MulStrengthReducePass(Cpu0TargetMachine &TM);
 
 } // end namespace llvm;
 
 #endif
-

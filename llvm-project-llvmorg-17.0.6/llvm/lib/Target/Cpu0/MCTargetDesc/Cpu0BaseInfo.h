@@ -77,6 +77,8 @@ namespace Cpu0II {
     FrmJ  = 3,
     /// FrmOther - This form is for instructions that have no specific format.
     FrmOther = 4,
+    /// FrmR4 - This form is for instructions with 4 register operands.
+    FrmR4 = 5,
 
     FormMask = 15
   };
@@ -85,4 +87,3 @@ namespace Cpu0II {
 }
 
 #endif
-

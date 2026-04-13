@@ -20,6 +20,11 @@ def SDT_Cpu0Ret          : SDTypeProfile<0, 1, [SDTCisInt<0>]>;
 def SDT_Cpu0DivRem       : SDTypeProfile<0, 2,
                                          [SDTCisInt<0>,
                                           SDTCisSameAs<0, 1>]>;
+def SDT_Cpu0IMAC         : SDTypeProfile<1, 3,
+                                         [SDTCisInt<0>,
+                                          SDTCisSameAs<0, 1>,
+                                          SDTCisSameAs<1, 2>,
+                                          SDTCisSameAs<2, 3>]>;
 
 def SDT_Cpu0JmpLink      : SDTypeProfile<0, 1, [SDTCisVT<0, iPTR>]>;
 
@@ -57,6 +62,7 @@ def Cpu0DivRem    : SDNode<"Cpu0ISD::DivRem", SDT_Cpu0DivRem,
                            [SDNPOutGlue]>;
 def Cpu0DivRemU   : SDNode<"Cpu0ISD::DivRemU", SDT_Cpu0DivRem,
                            [SDNPOutGlue]>;
+def Cpu0IMac      : SDNode<"Cpu0ISD::IMAC", SDT_Cpu0IMAC>;
 
 def Cpu0Wrapper    : SDNode<"Cpu0ISD::Wrapper", SDTIntBinOp>;
 
@@ -273,6 +279,24 @@ class IntrinArithLogicR<bits<8> op, string instr_asm, SDPatternOperator OpNode,
      [(set GPROut:$ra, (OpNode RC:$rb, RC:$rc))], itin> {
   let shamt = 0;
   let isCommutable = isComm;	// e.g. add rb rc =  add rc rb
+  let isReMaterializable = 1;
+}
+
+class ArithLogicUnary<bits<8> op, string instr_asm, SDNode OpNode,
+                      InstrItinClass itin, RegisterClass RC>:
+  FA<op, (outs GPROut:$ra), (ins RC:$rb),
+     !strconcat(instr_asm, "\t$ra, $rb"),
+     [(set GPROut:$ra, (OpNode RC:$rb))], itin> {
+  let rc = 0;
+  let shamt = 0;
+  let isReMaterializable = 1;
+}
+
+class ArithLogicR4<bits<8> op, string instr_asm, SDNode OpNode,
+                   InstrItinClass itin, RegisterClass RC>:
+  FR4<op, (outs GPROut:$ra), (ins RC:$rb, RC:$rc, RC:$rd),
+      !strconcat(instr_asm, "\t$ra, $rb, $rc, $rd"),
+      [(set GPROut:$ra, (OpNode RC:$rb, RC:$rc, RC:$rd))], itin> {
   let isReMaterializable = 1;
 }
 
@@ -698,6 +722,12 @@ def SUB     : ArithLogicR<0x14, "sub", sub, IIAlu, CPURegs>;
 }
 def MUL     : ArithLogicR<0x17, "mul", mul, IIImul, CPURegs, 1>;
 }
+let Predicates = [Ch12_1] in {
+def IMAC    : ArithLogicR4<0x53, "imac", Cpu0IMac, IIImul, CPURegs>;
+def MAX     : ArithLogicR<0x54, "max", smax, IIAlu, CPURegs, 1>;
+def MIN     : ArithLogicR<0x55, "min", smin, IIAlu, CPURegs, 1>;
+def POPC    : ArithLogicUnary<0x56, "popc", ctpop, IIAlu, CPURegs>;
+}
 let Predicates = [Ch4_2] in {
 def AND     : ArithLogicR<0x18, "and", and, IIAlu, CPURegs, 1>;
 def OR      : ArithLogicR<0x19, "or", or, IIAlu, CPURegs, 1>;
@@ -876,6 +906,18 @@ def : Pat<(addc CPURegs:$lhs, CPURegs:$rhs),
           (ADDu CPURegs:$lhs, CPURegs:$rhs)>;
 def : Pat<(addc  CPURegs:$src, immSExt16:$imm),
           (ADDiu CPURegs:$src, imm:$imm)>;
+}
+
+let Predicates = [Ch12_1] in {
+// Canonical relu-like patterns.
+def : Pat<(smax CPURegs:$lhs, 0),
+          (MAX CPURegs:$lhs, ZERO)>;
+def : Pat<(smax 0, CPURegs:$rhs),
+          (MAX ZERO, CPURegs:$rhs)>;
+def : Pat<(smin CPURegs:$lhs, 0),
+          (MIN CPURegs:$lhs, ZERO)>;
+def : Pat<(smin 0, CPURegs:$rhs),
+          (MIN ZERO, CPURegs:$rhs)>;
 }
 
 let Predicates = [Ch9_1] in {
@@ -1149,4 +1191,3 @@ defm : SetgePatsCmp<CPURegs>;
 let Predicates = [Ch8_2] in {
 include "Cpu0CondMov.td"
 } // let Predicates = [Ch8_2]
-

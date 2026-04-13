@@ -173,6 +173,7 @@ eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
 
   MI.getOperand(i).ChangeToRegister(FrameReg, false);
   MI.getOperand(i+1).ChangeToImmediate(Offset);
+  return false;
 }
 //}
 
@@ -193,4 +194,3 @@ getFrameRegister(const MachineFunction &MF) const {
   return TFI->hasFP(MF) ? (Cpu0::FP) :
                           (Cpu0::SP);
 }
-
