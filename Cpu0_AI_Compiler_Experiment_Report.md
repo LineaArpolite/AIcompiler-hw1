@@ -61,9 +61,9 @@ cmake --build build --parallel $(nproc)
 ---
 
 ## 3. 修改代码重新编译
-本节对应“修改代码重新编译”流程：先用 AI 给出改造目标，再逐步落地代码，最后重新编译与验证。
+在 gpt-5.3-codex high 的帮助下完成。
 
-### 3.1 本次用于驱动实现的 AI Prompt
+### 3.1 驱动实现的 AI Prompt
 ```text
 课程：编译原理与AI工具链
 交付形式：Git 仓库 + 报告 PDF
